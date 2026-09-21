@@ -1,0 +1,55 @@
+{
+    "name": "polunich/wp-jsonapi",
+    "description": "JSON:API 1.1 on the WordPress REST API",
+    "type": "library",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.3",
+        "composer-runtime-api": "^2.0",
+        "psr/container": "^2.0",
+        "psr/log": "^3.0"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "opis/json-schema": "^2.6",
+        "php-stubs/wordpress-stubs": "^7.1",
+        "phpat/phpat": "^0.12",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^12.5",
+        "roots/wordpress-no-content": "~7.1.0",
+        "szepeviktor/phpstan-wordpress": "^2.0"
+    },
+    "suggest": {
+        "opis/json-schema": "required by the Polunich\\WpJsonApi\\Testing assertions, at 2.2 or later.",
+        "phpunit/phpunit": "required by the Polunich\\WpJsonApi\\Testing assertions."
+    },
+    "autoload": {
+        "psr-4": {
+            "Polunich\\WpJsonApi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Polunich\\WpJsonApi\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/wp-jsonapi"
+    ],
+    "extra": {
+        "wp-jsonapi": {
+            "api": {
+                "tests/Fixtures/openapi.json": "Polunich\\WpJsonApi\\Tests\\Fixtures\\Api\\FixtureApi::declaration"
+            }
+        }
+    },
+    "scripts": {
+        "cs": "php-cs-fixer check --diff",
+        "stan": [
+            "phpstan analyse --configuration phpstan.neon.dist --memory-limit 2G",
+            "phpstan analyse --configuration phpstan-core.neon.dist --memory-limit 2G"
+        ],
+        "test": "phpunit --configuration phpunit.xml.dist",
+        "test:integration": "phpunit --configuration phpunit-integration.xml.dist"
+    }
+}

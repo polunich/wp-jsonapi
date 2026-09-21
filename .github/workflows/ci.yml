@@ -1,0 +1,86 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.3'
+      - run: composer install --no-interaction --no-progress
+      - run: composer cs
+      - run: composer stan
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+      - run: composer install --no-interaction --no-progress
+      - run: composer test
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { php: '8.3', wordpress: '6.4.10' }
+          - { php: '8.3', wordpress: '7.1' }
+          - { php: '8.4', wordpress: '7.1' }
+          - { php: '8.5', wordpress: '7.1' }
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: wordpress_test
+          MARIADB_USER: wordpress
+          MARIADB_PASSWORD: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      WP_JSONAPI_ROOT: ${{ github.workspace }}
+      WP_JSONAPI_WORDPRESS_DIR: ${{ github.workspace }}/.build/wordpress
+      WP_JSONAPI_TEST_DB_NAME: wordpress_test
+      WP_JSONAPI_TEST_DB_USER: wordpress
+      WP_JSONAPI_TEST_DB_PASSWORD: wordpress
+      WP_JSONAPI_TEST_DB_HOST: 127.0.0.1:3306
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli
+      - run: composer install --no-interaction --no-progress
+      - name: install WordPress ${{ matrix.wordpress }}
+        run: |
+          archive="wordpress-${{ matrix.wordpress }}.tar.gz"
+          curl -fsSL -o "$archive" "https://wordpress.org/$archive"
+          curl -fsSL -o "$archive.sha1" "https://wordpress.org/$archive.sha1"
+          echo "$(cat "$archive.sha1")  $archive" | sha1sum -c -
+          mkdir -p "$WP_JSONAPI_WORDPRESS_DIR"
+          tar -xzf "$archive" -C "$WP_JSONAPI_WORDPRESS_DIR" --strip-components=1
+          mkdir -p "$WP_JSONAPI_WORDPRESS_DIR/wp-content/mu-plugins"
+          cp tests/Fixtures/Plugin/wp-jsonapi-fixture.php "$WP_JSONAPI_WORDPRESS_DIR/wp-content/mu-plugins/"
+          php tests/Integration/install.php "$WP_JSONAPI_WORDPRESS_DIR"
+      - run: composer test:integration

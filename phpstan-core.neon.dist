@@ -1,0 +1,23 @@
+parameters:
+    level: 10
+    paths:
+        - src/Access
+        - src/Authentication
+        - src/Codec
+        - src/Declaration
+        - src/Document
+        - src/Endpoint
+        - src/Error
+        - src/Execution
+        - src/Http
+        - src/Localization
+        - src/Metadata
+        - src/OpenApi
+        - src/Operation
+        - src/Parsing
+        - src/Query
+        - src/Rendering
+        - src/Routing
+        - src/Server
+        - src/Store
+        - src/Text

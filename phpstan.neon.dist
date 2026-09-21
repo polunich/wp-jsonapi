@@ -1,0 +1,140 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    - vendor/phpat/phpat/extension.neon
+
+parameters:
+    level: 10
+    phpat:
+        ignore_built_in_classes: true
+    paths:
+        - bin/wp-jsonapi
+        - src
+        - tests
+    ignoreErrors:
+        # fixtures that break the analysis on purpose stay analysed,
+        # and each entry ignores their errors by identifier and path:
+        # `excludePaths` would hide their other errors too,
+        # while `reportUnmatchedIgnoredErrors` at its default flags an entry that stops matching.
+        #
+        # an entry names one file with `path`, never `paths`: a run that leaves the file out,
+        # such as `phpstan analyse src`, skips it, while an entry with `paths` fails as unmatched.
+        #
+        # fixture traits that no class uses, on purpose:
+        # the trait rules check a trait on its own declaration
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/NestedTraitUses.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/TraitTags.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/UnlistedButMarkedInternalMembers.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/UnusedLeakingMembers.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Library/OtherNamespace/UnlistedAndUnmarkedMembers.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Modules/Core/Excused.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Modules/Core/NamesDriver.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Modules/Core/UnusedNamesAllowed.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Modules/Core/WritesEveryKind.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Modules/Elsewhere/Unselected.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Naming/AbstractHelpers.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Naming/HelperTrait.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Naming/Helpers.php
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/Architecture/Naming/Resource.php
+        # fixture traits named against the naming rules on purpose
+        -
+            identifier: phpat.traitsHaveNoSuffix
+            path: tests/Fixtures/Architecture/Naming/FormattingTrait.php
+        -
+            identifier: phpat.traitsHaveNoSuffix
+            path: tests/Fixtures/Architecture/Naming/HelperTrait.php
+        -
+            identifier: phpat.namesAvoidSoftReservedWords
+            path: tests/Fixtures/Architecture/Naming/Numeric.php
+        -
+            identifier: phpat.namesAvoidSoftReservedWords
+            path: tests/Fixtures/Architecture/Naming/Resource.php
+        # a fixture whose `@use` tag spells its trait in another case:
+        # PHPStan matches the tag to no trait,
+        # so it reports the tag and the missing type arguments of the trait
+        -
+            identifiers:
+                - generics.wrongParent
+                - missingType.generics
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/UseTagInAnotherCase.php
+        # a fixture whose return type names a library class no file declares:
+        # PHPStan reports the unknown class and the type the method never returns
+        -
+            identifiers:
+                - class.notFound
+                - return.unusedType
+            path: tests/Fixtures/Architecture/Library/PublicNamespace/NamesUnknownClass.php
+        # fixtures that write what the code-style rules report, on purpose
+        -
+            identifier: codeStyle.arrowFunction
+            path: tests/Fixtures/Architecture/CodeStyle/ArrowFunctions.php
+        -
+            identifier: codeStyle.arrowFunction
+            path: tests/Fixtures/Architecture/Modules/Core/WritesEveryKind.php
+        -
+            identifier: codeStyle.qualifiedGlobalName
+            path: tests/Fixtures/Architecture/CodeStyle/QualifiedNames.php
+        -
+            identifier: codeStyle.qualifiedGlobalName
+            path: tests/Fixtures/Architecture/CodeStyle/global-names.php
+
+services:
+    -
+        class: Polunich\WpJsonApi\Tests\Architecture\ModuleDependencyRules
+        tags:
+            - phpat.test
+    -
+        class: Polunich\WpJsonApi\Tests\Architecture\NamingRules
+        tags:
+            - phpat.test
+    -
+        factory: Polunich\WpJsonApi\Tests\Architecture\PublicApiRule::forLibrary
+        tags:
+            - phpstan.rules.rule
+    -
+        factory: Polunich\WpJsonApi\Tests\Architecture\PublicApiTraitRule::forLibrary
+        tags:
+            - phpstan.rules.rule
+    -
+        factory: Polunich\WpJsonApi\Tests\Architecture\NamingTraitRule::forLibrary
+        tags:
+            - phpstan.rules.rule
+    -
+        factory: Polunich\WpJsonApi\Tests\Architecture\ModuleDependencyTraitRule::forLibrary
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Polunich\WpJsonApi\Tests\Architecture\ArrowFunctionRule
+        tags:
+            - phpstan.rules.rule
+    -
+        class: Polunich\WpJsonApi\Tests\Architecture\QualifiedGlobalNameRule
+        tags:
+            - phpstan.rules.rule
